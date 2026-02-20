@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ chapter.name }} – Verse {{ verse.number }}{% endblock %}
+{% block content %}
+
+{# ── Progress bar ─────────────────────────────────────────────────────────── #}
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <span class="text-muted">
+    <i class="bi bi-book me-1"></i><strong>{{ chapter.name }}</strong>
+  </span>
+  <span class="text-muted small">Verse {{ idx + 1 }} of {{ verses|length }}</span>
+</div>
+<div class="progress mb-4" style="height:8px">
+  <div class="progress-bar bg-dark" style="width:{{ ((idx) / verses|length * 100)|round }}%"></div>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    {# ── Hint: previous verse ─────────────────────────────────────────────── #}
+    {% if prev_verse %}
+    <div class="hint-box mb-3">
+      <p class="mb-1 small text-muted fw-semibold"><i class="bi bi-lightbulb me-1"></i>Previous verse (verse {{ prev_verse.number }}):</p>
+      <p class="mb-0">{{ prev_verse.content }}</p>
+    </div>
+    {% else %}
+    <div class="alert alert-info py-2 mb-3">
+      <i class="bi bi-info-circle me-1"></i>This is the first verse – no hint available yet. Good luck!
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header bg-dark text-white">
+        <strong>Verse {{ verse.number }}</strong>
+      </div>
+      <div class="card-body p-4">
+
+        {# ── Feedback section (shown after submission) ─────────────────────── #}
+        {% if diff_html is not none %}
+        <div class="mb-4">
+          <p class="fw-semibold mb-2">
+            Result:
+            <span class="badge {% if verse_score >= 90 %}bg-success{% elif verse_score >= 70 %}bg-primary{% elif verse_score >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} ms-2">
+              {{ verse_score }}%
+            </span>
+          </p>
+
+          {# Side-by-side: expected vs typed #}
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <p class="small text-muted fw-semibold mb-1">Expected:</p>
+              <div class="verse-box">{{ verse.content }}</div>
+            </div>
+            <div class="col-md-6">
+              <p class="small text-muted fw-semibold mb-1">What you typed:</p>
+              <div class="verse-box text-muted fst-italic">{{ user_input }}</div>
+            </div>
+          </div>
+
+          <p class="small text-muted fw-semibold mb-1">Word-by-word comparison:</p>
+          <div class="verse-box mb-1">{{ diff_html|safe }}</div>
+          <div class="d-flex gap-3 mt-2 small text-muted">
+            <span><span class="diff-ok">■</span> Correct</span>
+            <span><span class="diff-missing">■</span> Missing / wrong</span>
+            <span><span class="diff-extra">■</span> Extra words</span>
+          </div>
+        </div>
+
+        {# Next button #}
+        <form method="post">
+          <input type="hidden" name="user_input" value="{{ user_input }}">
+          <button type="submit" name="next" value="1"
+                  class="btn btn-dark px-4">
+            {% if idx + 1 < verses|length %}
+              <i class="bi bi-arrow-right me-1"></i>Next Verse
+            {% else %}
+              <i class="bi bi-flag-fill me-1"></i>Finish Chapter
+            {% endif %}
+          </button>
+        </form>
+
+        {% else %}
+
+        {# ── Input form ──────────────────────────────────────────────────── #}
+        <p class="text-muted mb-3">
+          Type the verse from memory and press <strong>Check</strong>.
+        </p>
+        <form method="post" autocomplete="off" spellcheck="false">
+          <div class="mb-3">
+            <textarea name="user_input"
+                      class="form-control poem-input"
+                      rows="5"
+                      placeholder="Type verse {{ verse.number }} here…"
+                      autofocus></textarea>
+          </div>
+          <button type="submit" class="btn btn-dark px-4">
+            <i class="bi bi-check2-circle me-1"></i>Check
+          </button>
+          <a href="{{ url_for('index') }}" class="btn btn-outline-secondary ms-2">Quit</a>
+        </form>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

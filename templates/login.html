@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Login – Poem Memorizer{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5 col-lg-4">
+    <div class="card mt-5">
+      <div class="card-header bg-dark text-white py-3">
+        <h4 class="mb-0"><i class="bi bi-box-arrow-in-right me-2"></i>Login</h4>
+      </div>
+      <div class="card-body p-4">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Username</label>
+            <input type="text" name="username" class="form-control" required autofocus>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button class="btn btn-dark w-100" type="submit">Login</button>
+        </form>
+        <hr>
+        <p class="text-center mb-0 text-muted">
+          No account? <a href="{{ url_for('register') }}">Register here</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

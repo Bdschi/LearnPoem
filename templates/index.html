@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Choose a Chapter{% endblock %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2 class="fw-bold">📖 Select a Chapter to Practice</h2>
+    <p class="text-muted">Choose a chapter and recite it verse by verse from memory.</p>
+  </div>
+</div>
+
+{% if chapters %}
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+  {% for ch in chapters %}
+  <div class="col">
+    <div class="card chapter-card h-100" onclick="location.href='{{ url_for('start_session', chapter_id=ch.id) }}'">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="badge bg-secondary">{{ ch.type or 'Chapter' }}</span>
+          <span class="text-muted small">Order {{ ch['order'] }}</span>
+        </div>
+        <h5 class="card-title fw-bold">{{ ch.name }}</h5>
+        <p class="text-muted small mb-0">
+          <i class="bi bi-file-text me-1"></i>{{ ch.verse_count }} verses
+        </p>
+      </div>
+      <div class="card-footer bg-transparent border-0 pb-3">
+        <a href="{{ url_for('start_session', chapter_id=ch.id) }}" class="btn btn-dark btn-sm">
+          <i class="bi bi-play-fill me-1"></i>Start Practice
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  No chapters found in the database. Make sure <code>POEM_DB</code> points to a valid database.
+</div>
+{% endif %}
+{% endblock %}

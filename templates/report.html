@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Report – {{ chapter.name }}{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+
+    {# ── Overall result card ───────────────────────────────────────────────── #}
+    <div class="card mb-4">
+      <div class="card-body text-center py-5">
+        <h2 class="fw-bold mb-1">{{ chapter.name }}</h2>
+        <p class="text-muted mb-4">Chapter complete!</p>
+
+        <div class="display-1 fw-bold text-{{ grade_color }}">{{ grade }}</div>
+        <div class="fs-4 text-muted mt-1">{{ avg_score }}% average accuracy</div>
+
+        <div class="row justify-content-center mt-4 g-3 text-start">
+          <div class="col-auto">
+            <div class="p-3 bg-success bg-opacity-10 rounded-3 text-center" style="min-width:110px">
+              <div class="fw-bold fs-5">{{ diffs | selectattr('score', 'ge', 90) | list | length }}</div>
+              <div class="small text-muted">Excellent<br>(≥ 90%)</div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="p-3 bg-primary bg-opacity-10 rounded-3 text-center" style="min-width:110px">
+              <div class="fw-bold fs-5">{{ diffs | selectattr('score', 'ge', 70) | rejectattr('score', 'ge', 90) | list | length }}</div>
+              <div class="small text-muted">Good<br>(70–89%)</div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="p-3 bg-danger bg-opacity-10 rounded-3 text-center" style="min-width:110px">
+              <div class="fw-bold fs-5">{{ diffs | rejectattr('score', 'ge', 70) | list | length }}</div>
+              <div class="small text-muted">Needs work<br>(< 70%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Per-verse breakdown ───────────────────────────────────────────────── #}
+    <h5 class="fw-bold mb-3">Verse-by-verse Breakdown</h5>
+    {% for d in diffs %}
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <span class="fw-semibold">Verse {{ d.number }}</span>
+        <span class="badge
+          {% if d.score >= 90 %}bg-success
+          {% elif d.score >= 70 %}bg-primary
+          {% elif d.score >= 50 %}bg-warning text-dark
+          {% else %}bg-danger{% endif %}">
+          {{ d.score }}%
+        </span>
+      </div>
+      <div class="card-body">
+        {% if d.score < 100 %}
+        <div class="row g-3 mb-2">
+          <div class="col-md-6">
+            <p class="small text-muted fw-semibold mb-1">Expected:</p>
+            <div class="verse-box small">{{ d.expected }}</div>
+          </div>
+          <div class="col-md-6">
+            <p class="small text-muted fw-semibold mb-1">Your answer:</p>
+            <div class="verse-box small text-muted fst-italic">{{ d.user_input }}</div>
+          </div>
+        </div>
+        <p class="small text-muted fw-semibold mb-1">Diff:</p>
+        <div class="verse-box small">{{ d.diff_html|safe }}</div>
+        {% else %}
+        <p class="text-success mb-0"><i class="bi bi-check-circle-fill me-1"></i>Perfect!</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    {# ── Personal history ─────────────────────────────────────────────────── #}
+    {% if history %}
+    <h5 class="fw-bold mb-3 mt-4">Your History for This Chapter</h5>
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Date</th>
+              <th class="text-center">Score</th>
+              <th class="text-center">Grade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in history %}
+            <tr>
+              <td class="text-muted small align-middle">{{ h.completed_at[:16].replace('T',' ') }}</td>
+              <td class="text-center align-middle">{{ h.total_score }}%</td>
+              <td class="text-center align-middle">
+                <span class="badge
+                  {% if h.grade.startswith('A') %}bg-success
+                  {% elif h.grade.startswith('B') %}bg-primary
+                  {% elif h.grade.startswith('C') %}bg-warning text-dark
+                  {% else %}bg-danger{% endif %}">
+                  {{ h.grade }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-4 d-flex gap-2">
+      <a href="{{ url_for('index') }}" class="btn btn-dark">
+        <i class="bi bi-house me-1"></i>Choose Another Chapter
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
