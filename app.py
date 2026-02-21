@@ -94,8 +94,16 @@ def current_user():
 
 # ── Text comparison helpers ────────────────────────────────────────────────────
 
+def normalize_arabic_text(text):
+    # Step 1: Replace Alef Wasla (ٱ) with regular Alif (ا)
+    text = text.replace('\u0671', '\u0627')
+    # Step 2: Remove Arabic diacritics (U+064B to U+0655)
+    arabic_diacritics = re.compile(r'[\u064B-\u0655]')
+    text = arabic_diacritics.sub('', text)
+    return text
+
 def normalize(text: str) -> str:
-    return re.sub(r"\s+", " ", text.strip())
+    return re.sub(r"\s+", " ", normalize_arabic_text(text.strip()))
 
 
 def similarity_score(expected: str, user_input: str) -> float:
@@ -209,7 +217,7 @@ def logout():
 def index():
     db = get_db()
     chapters = db.execute(
-        'SELECT * FROM chapters ORDER BY "order"'
+        'SELECT * FROM chapters ORDER BY id'
     ).fetchall()
     return render_template("index.html", chapters=chapters)
 
