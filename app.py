@@ -1,7 +1,7 @@
 import os
 import re
 import sqlite3
-from datetime import datetime
+from datetime import datetime, UTC
 from difflib import SequenceMatcher
 from functools import wraps
 
@@ -93,7 +93,6 @@ def current_user():
 
 
 # ── Text comparison helpers ────────────────────────────────────────────────────
-
 def normalize_arabic_text(text):
     # Step 1: Replace Alef Wasla (ٱ) with regular Alif (ا)
     text = text.replace('\u0671', '\u0627')
@@ -217,7 +216,7 @@ def logout():
 def index():
     db = get_db()
     chapters = db.execute(
-        'SELECT * FROM chapters ORDER BY id'
+        'SELECT * FROM chapters ORDER BY 1'
     ).fetchall()
     return render_template("index.html", chapters=chapters)
 
@@ -355,7 +354,7 @@ def report():
         """UPDATE memorization_sessions
            SET completed_at = ?, total_score = ?, grade = ?
            WHERE id = ?""",
-        (datetime.utcnow(), avg_score, grade, mem_sid),
+        (datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S"), avg_score, grade, mem_sid),
     )
     db.commit()
 
