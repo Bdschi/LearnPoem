@@ -281,10 +281,17 @@ def verse_page():
 
     if request.method == "POST":
         user_input = request.form.get("user_input", "")
+
+        # "Next" button — just advance, don't save again
+        if "next" in request.form:
+            session["verse_index"] = idx + 1
+            session.modified = True
+            return redirect(url_for("verse_page"))
+
+        # "Check" button — save attempt and show feedback
         sim        = similarity_score(verse["content"], user_input)
         score_pct  = round(sim * 100, 1)
 
-        # Save attempt
         db.execute(
             """INSERT INTO verse_attempts (session_id, verse_id, user_input, similarity)
                VALUES (?, ?, ?, ?)""",
@@ -295,13 +302,6 @@ def verse_page():
         diff_html   = build_diff_html(verse["content"], user_input)
         verse_score = score_pct
 
-        # Advance on "next" button press (second submit)
-        if "next" in request.form:
-            session["verse_index"] = idx + 1
-            session.modified = True
-            return redirect(url_for("verse_page"))
-
-        # First submit: show feedback
         return render_template(
             "verse.html",
             chapter=chapter,
@@ -406,4 +406,5 @@ def report():
 if __name__ == "__main__":
     with app.app_context():
         init_db()
-    app.run(debug=True)
+    #app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
