@@ -19,7 +19,6 @@ app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 # ── Database path comes from the environment ───────────────────────────────────
 DB_PATH = os.environ.get("POEM_DB", "poem.db")
 
-
 # ── DB helpers ─────────────────────────────────────────────────────────────────
 
 def get_db():
@@ -29,6 +28,12 @@ def get_db():
         g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
 
+@app.context_processor
+def inject_globals():
+    POEM_BRAND_NAME = os.environ.get("POEM_BRAND_NAME", "Poem")
+    YES_TYPE_NAME = os.environ.get("YES_TYPE_NAME", "Yes")
+    NO_TYPE_NAME = os.environ.get("NO_TYPE_NAME", "No")
+    return dict(YES_TYPE_NAME=YES_TYPE_NAME, NO_TYPE_NAME=NO_TYPE_NAME, POEM_BRAND_NAME=POEM_BRAND_NAME)
 
 @app.teardown_appcontext
 def close_db(e=None):
