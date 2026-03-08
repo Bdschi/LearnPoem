@@ -28,6 +28,13 @@ def get_db():
         g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
 
+def get_available_translations():
+    # Get available translations
+    db = get_db()
+    cursor = db.execute("SELECT code, translation_name FROM available_translations")
+    translations = cursor.fetchall()
+    return translations
+
 @app.context_processor
 def inject_globals():
     POEM_BRAND_NAME = os.environ.get("POEM_BRAND_NAME", "Poem")
@@ -227,11 +234,13 @@ def logout():
 @app.route("/")
 @login_required
 def index():
+    selected_translation = request.args.get('translation', None)
     db = get_db()
     chapters = db.execute(
         'SELECT * FROM chapters ORDER BY 1'
     ).fetchall()
-    return render_template("index.html", chapters=chapters)
+    translations = get_available_translations()
+    return render_template("index.html", chapters=chapters, translations=translations, selected_translation=selected_translation)
 
 
 # ── Routes: memorization ───────────────────────────────────────────────────────
@@ -239,6 +248,8 @@ def index():
 @app.route("/start/<int:chapter_id>")
 @login_required
 def start_session(chapter_id):
+    selected_translation = request.args.get('translation', None)
+
     db = get_db()
     chapter = db.execute("SELECT * FROM chapters WHERE id = ?", (chapter_id,)).fetchone()
     if not chapter:
@@ -258,17 +269,23 @@ def start_session(chapter_id):
     session["chapter_id"]     = chapter_id
     session["verse_index"]    = 0          # index into the ordered verse list
 
-    return redirect(url_for("verse_page"))
-
+    if selected_translation:
+        return redirect(url_for("verse_page", translation=selected_translation))
+    else:
+        return redirect(url_for("verse_page"))
 
 @app.route("/verse", methods=["GET", "POST"])
 @login_required
 def verse_page():
+    translations = get_available_translations()
     if "mem_session_id" not in session:
         flash("No active session.", "warning")
         return redirect(url_for("index"))
 
     db        = get_db()
+    
+    selected_translation = request.args.get('translation', None)
+    
     chapter   = db.execute("SELECT * FROM chapters WHERE id = ?", (session["chapter_id"],)).fetchone()
     verses    = db.execute(
         "SELECT * FROM verses WHERE chapter_id = ? ORDER BY number",
@@ -276,12 +293,19 @@ def verse_page():
     ).fetchall()
     idx       = session["verse_index"]
 
-    # All verses done → go to report
     if idx >= len(verses):
         return redirect(url_for("report"))
 
     verse     = verses[idx]
     prev_verse = verses[idx - 1] if idx > 0 else None
+
+    translated_verse = None
+    if selected_translation:
+        translated_verse = db.execute(
+            """SELECT text FROM translated_verses 
+               WHERE nrc = ? AND nrv = ? AND type = ?""",
+            (chapter["id"], verse["number"], selected_translation)
+        ).fetchone()
 
     diff_html  = None
     verse_score = None
@@ -289,13 +313,11 @@ def verse_page():
     if request.method == "POST":
         user_input = request.form.get("user_input", "")
 
-        # "Next" button — just advance, don't save again
         if "next" in request.form:
             session["verse_index"] = idx + 1
             session.modified = True
             return redirect(url_for("verse_page"))
 
-        # "Check" button — save attempt and show feedback
         sim        = similarity_score(verse["content"], user_input)
         score_pct  = round(sim * 100, 1)
 
@@ -319,7 +341,26 @@ def verse_page():
             diff_html=diff_html,
             verse_score=verse_score,
             user_input=user_input,
+            translations=translations,
+            selected_translation=selected_translation,
+            translated_verse=translated_verse,
         )
+
+    # GET request handler
+    else:
+        # Check if we should show a previous result
+        user_input_param = request.args.get('user_input', None)
+        show_result = request.args.get('show_result', None)
+        
+        if user_input_param and show_result:
+            # Reconstruct the diff from the saved input
+            sim = similarity_score(verse["content"], user_input_param)
+            score_pct = round(sim * 100, 1)
+            diff_html = build_diff_html(verse["content"], user_input_param)
+            verse_score = score_pct
+            user_input = user_input_param
+        else:
+            user_input = None
 
     return render_template(
         "verse.html",
@@ -330,9 +371,11 @@ def verse_page():
         prev_verse=prev_verse,
         diff_html=diff_html,
         verse_score=verse_score,
-        user_input=None,
+        user_input=user_input,
+        translations=translations,
+        selected_translation=selected_translation,
+        translated_verse=translated_verse,
     )
-
 
 # ── Routes: report ─────────────────────────────────────────────────────────────
 
