@@ -301,6 +301,7 @@ def verse_page():
 
     translated_verse = None
     if selected_translation:
+        print(f"DEBUG get translation type={selected_translation} nrc={chapter['id']} nrv={verse['number']}")
         translated_verse = db.execute(
             """SELECT text FROM translated_verses 
                WHERE nrc = ? AND nrv = ? AND type = ?""",
@@ -316,7 +317,10 @@ def verse_page():
         if "next" in request.form:
             session["verse_index"] = idx + 1
             session.modified = True
-            return redirect(url_for("verse_page"))
+            if selected_translation:
+                return redirect(url_for("verse_page", translation=selected_translation))
+            else:
+                return redirect(url_for("verse_page"))
 
         sim        = similarity_score(verse["content"], user_input)
         score_pct  = round(sim * 100, 1)
